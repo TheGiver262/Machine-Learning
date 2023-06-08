@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 from sklearn import tree
 from sklearn.metrics import accuracy_score
 
+numOfFoldsPerTrial = 10
 
-
-def evaluatePerformance():
+def evaluatePerformance(numTrials=100):
     '''
     Evaluate the performance of decision trees,
     averaged over 1,000 trials of 10-fold cross validation
@@ -29,42 +29,74 @@ def evaluatePerformance():
     '''
     
     # Load Data
-    filename = 'data/SPECTF.dat'
-    data = np.loadtxt(filename, delimiter=',')
-    X = data[:, 1:]
-    y = np.array([data[:, 0]]).T
-    n,d = X.shape
+    filename = 'hw1_skeleton/data/SPECTF.dat'		# SPECTF là file gồm 267 ảnh, 44 thuộc tính
+    data = np.loadtxt(filename, delimiter=',')		# Load giá trị của file txt vào list data, mỗi giá trị cách nhau bởi dấu ,
+    X = data[:, 1:]					# X là list 2 chiều phụ thuộc theo data đầu vào -> X[267][44]
+    y = np.array([data[:, 0]]).T			 y là mảng giá trị kết quả cho mỗi sample của X -> y[267] với 2 giá trị [bình thường, bất thường] hay [0,1]
+    n,d = X.shape					# n và d là kích thước của list X, vì X là mảng 2 chiều nên n là số dòng(samples), d là số cột(features)
 
-    # shuffle the data
-    idx = np.arange(n)
-    np.random.seed(13)
-    np.random.shuffle(idx)
-    X = X[idx]
-    y = y[idx]
+    # create list to hold data
+    treeAccuracies = []
+    stumpAccuracies = []
+    dt3Accuracies = []
+
+    # perform 100 trials
+    for x in range(0, numTrials):
+        # shuffle the data
+        idx = np.arange(n)			# Tạo 1 mảng n phần tử từ 0 đến n, mỗi phần tử cách nhau 1
+        np.random.seed(13)			# Tạo số ngẫu nhiên với seed 13
+        np.random.shuffle(idx)			# Trộn các phần tử trong mảng idx	
+        X = X[idx]
+        y = y[idx]
+
+        # split the data randomly into 10 folds
+        folds = []    								# Khởi tạo list folds
+        intervalDivider = int(len(X)/numOfFoldsPerTrial)			# số intevalDivider = kích thước của X / số folds mỗi lần thử = 267/10 = 26
+        for fold in range(0, numOfFoldsPerTrial):				# Với mỗi 1 fold trong 10 fold
+            # designate a new testing range
+            Xtest = X[fold * intervalDivider:(fold + 1) * intervalDivider,:]	# Xtest = 
+            ytest = y[fold * intervalDivider:(fold + 1) * intervalDivider,:]
+            Xtrain = X[:(fold * intervalDivider),:]
+            ytrain = y[:(fold * intervalDivider),:]
+            Xtrain = Xtrain.tolist()
+            ytrain = ytrain.tolist()
+
+            # complete the training data set so that it contains all
+            # data except for the current test fold
+            for dataRow in range((fold + 1) * intervalDivider, len(X)):
+                Xtrain.append(X[dataRow])
+                ytrain.append(y[dataRow])
+
+            # train the decision tree
+            clf = tree.DecisionTreeClassifier()
+            clf = clf.fit(Xtrain,ytrain)
+
+            # train the 1-level decision tree
+            oneLevel = tree.DecisionTreeClassifier(max_depth=1)
+            oneLevel = oneLevel.fit(Xtrain,ytrain)
+
+            # train the 3-level decision tree
+            threeLevel = tree.DecisionTreeClassifier(max_depth=3)
+            threeLevel = threeLevel.fit(Xtrain,ytrain)
+
+            # output predictions on the remaining data
+            y_pred_tree = clf.predict(Xtest)
+            y_pred_stump = oneLevel.predict(Xtest)
+            y_pred_dt3 = threeLevel.predict(Xtest)
+
+            # compute the training accuracy of the model and save to the 
+            # list of all accuracies
+            treeAccuracies.append(accuracy_score(ytest, y_pred_tree))
+            stumpAccuracies.append(accuracy_score(ytest, y_pred_stump))
+            dt3Accuracies.append(accuracy_score(ytest, y_pred_dt3)) 
     
-    # split the data
-    Xtrain = X[1:101,:]  # train on first 100 instances
-    Xtest = X[101:,:]
-    ytrain = y[1:101,:]  # test on remaining instances
-    ytest = y[101:,:]
-
-    # train the decision tree
-    clf = tree.DecisionTreeClassifier()
-    clf = clf.fit(Xtrain,ytrain)
-
-    # output predictions on the remaining data
-    y_pred = clf.predict(Xtest)
-
-    # compute the training accuracy of the model
-    meanDecisionTreeAccuracy = accuracy_score(ytest, y_pred)
-    
-    
-    # TODO: update these statistics based on the results of your experiment
-    stddevDecisionTreeAccuracy = 0
-    meanDecisionStumpAccuracy = 0
-    stddevDecisionStumpAccuracy = 0
-    meanDT3Accuracy = 0
-    stddevDT3Accuracy = 0
+    # Update these statistics based on the results of your experiment
+    meanDecisionTreeAccuracy = np.mean(treeAccuracies)
+    stddevDecisionTreeAccuracy = np.std(treeAccuracies)
+    meanDecisionStumpAccuracy = np.mean(stumpAccuracies)
+    stddevDecisionStumpAccuracy = np.std(stumpAccuracies)
+    meanDT3Accuracy = np.mean(dt3Accuracies)
+    stddevDT3Accuracy = np.std(dt3Accuracies)
 
     # make certain that the return value matches the API specification
     stats = np.zeros((3,2))
@@ -82,7 +114,7 @@ def evaluatePerformance():
 if __name__ == "__main__":
     
     stats = evaluatePerformance()
-    print "Decision Tree Accuracy = ", stats[0,0], " (", stats[0,1], ")"
-    print "Decision Stump Accuracy = ", stats[1,0], " (", stats[1,1], ")"
-    print "3-level Decision Tree = ", stats[2,0], " (", stats[2,1], ")"
+    print ("Decision Tree Accuracy = ", stats[0,0], " (", stats[0,1], ")")
+    print ("Decision Stump Accuracy = ", stats[1,0], " (", stats[1,1], ")")
+    print ("3-level Decision Tree = ", stats[2,0], " (", stats[2,1], ")")
 # ...to HERE.
