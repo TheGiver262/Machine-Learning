@@ -32,7 +32,7 @@ def evaluatePerformance(numTrials=100):
     filename = 'hw1_skeleton/data/SPECTF.dat'		# SPECTF là file gồm 267 ảnh, 44 thuộc tính
     data = np.loadtxt(filename, delimiter=',')		# Load giá trị của file txt vào list data, mỗi giá trị cách nhau bởi dấu ,
     X = data[:, 1:]					# X là list 2 chiều phụ thuộc theo data đầu vào -> X[267][44]
-    y = np.array([data[:, 0]]).T			 y là mảng giá trị kết quả cho mỗi sample của X -> y[267] với 2 giá trị [bình thường, bất thường] hay [0,1]
+    y = np.array([data[:, 0]]).T			 #y là mảng giá trị kết quả cho mỗi sample của X -> y[267] với 2 giá trị [bình thường, bất thường] hay [0,1]
     n,d = X.shape					# n và d là kích thước của list X, vì X là mảng 2 chiều nên n là số dòng(samples), d là số cột(features)
 
     # create list to hold data
